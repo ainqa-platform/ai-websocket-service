@@ -25,6 +25,21 @@ app.get("/status", (req, res) => {
   });
 });
 
+app.get("/users", (req, res) => {
+  const users = Object.entries(global.userSessions || {}).map(
+    ([userId, sessions]) => ({
+      userId,
+      connections: sessions, // list of socket IDs
+      connectionCount: sessions.length,
+    })
+  );
+
+  res.json({
+    totalUsers: users.length,
+    users,
+  });
+});
+
 // Create HTTP + WebSocket server
 const server = http.createServer(app);
 const io = new Server(server, {
