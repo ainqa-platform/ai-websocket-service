@@ -40,6 +40,22 @@ app.get("/users", (req, res) => {
   });
 });
 
+app.delete("/remove-user/:userId", (req, res) => {
+  const { userId } = req.params;
+
+  if (global.userSessions && global.userSessions[userId]) {
+    delete global.userSessions[userId];
+    return res.json({
+      success: true,
+      message: `User ${userId} removed from sessions`,
+    });
+  }
+
+  return res
+    .status(404)
+    .json({ success: false, message: `User ${userId} not found` });
+});
+
 // Create HTTP + WebSocket server
 const server = http.createServer(app);
 const io = new Server(server, {
