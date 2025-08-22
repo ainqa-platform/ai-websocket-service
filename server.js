@@ -56,6 +56,20 @@ app.delete("/remove-user/:userId", (req, res) => {
     .json({ success: false, message: `User ${userId} not found` });
 });
 
+app.delete("/remove-all-users", (req, res) => {
+  if (global.userSessions) {
+    global.userSessions = {}; // Clear all sessions
+    return res.json({
+      success: true,
+      message: "All users removed from sessions",
+    });
+  }
+
+  return res
+    .status(500)
+    .json({ success: false, message: "global.userSessions not initialized" });
+});
+
 // Create HTTP + WebSocket server
 const server = http.createServer(app);
 const io = new Server(server, {
