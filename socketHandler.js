@@ -1,11 +1,29 @@
 // socketHandler.js
 const FormData = require("form-data");
 const axios = require("axios");
-
+const {
+  createLogHeader,
+  createLogStep,
+  createLogData,
+} = require("./loggingUtils");
 
 global.userSessions = {}; // { userId: [socketId1, socketId2] }
 
+function startTimer() {
+  const start = process.hrtime();
+  return () => {
+    const [sec, nano] = process.hrtime(start);
+    return (sec + nano / 1e9).toFixed(2); // seconds with 2 decimal places
+  };
+}
+
+
 function registerSocket(io) {
+  createSocket(io);
+}
+
+async function createSocket(io) {
+  let logHeaderId = null;
   io.on("connection", (socket) => {
     console.log("Client connected:", socket.id);
 
@@ -16,12 +34,63 @@ function registerSocket(io) {
     }, 10 * 60 * 1000);
 
     // Step 1: Register after login
-    socket.on("register", (userId) => {
+    socket.on("register", async (userId) => {
+      logHeaderId = await createLogHeader({ personid: userId });
+      const endStep1 = startTimer();
+      const step1Time = endStep1();
+
+      // Log Step 1
+      if (logHeaderId) {
+        const step1LogId = await createLogStep(logHeaderId, {
+          orderSequence: "1",
+          stepName: "NodeJS-Before register to socket",
+          startTime: Date.now() - step1Time * 1000,
+          endTime: Date.now(),
+          responseTime: step1Time,
+        });
+
+        if (step1LogId) {
+          await createLogData(logHeaderId, step1LogId, {
+            inputData: { logid: logHeaderId },
+            outputData: {},
+            dataDescription: { desc: "NodeJS-Before register to socket" },
+          });
+        }
+      }
+
+      const endStep2 = startTimer();
+
       if (!global.userSessions[userId]) {
         global.userSessions[userId] = [];
       }
       global.userSessions[userId].push(socket.id);
       socket.userId = userId;
+
+      const step2Time = endStep2();
+
+      // Log Step 2
+      if (logHeaderId) {
+        const step2LogId = await createLogStep(logHeaderId, {
+          orderSequence: "2",
+          stepName:
+            "NodeJS- After register to socket(socketId:" + socket.id + ")",
+          startTime: Date.now() - step2Time * 1000,
+          endTime: Date.now(),
+          responseTime: step2Time,
+        });
+
+        if (step2LogId) {
+          await createLogData(logHeaderId, step2LogId, {
+            inputData: { socketid: socket.id },
+            outputData: {},
+            dataDescription: {
+              desc:
+                "NodeJS- After register to socket(socketId:" + socket.id + ")",
+            },
+          });
+        }
+      }
+
       console.log(`User ${userId} connected on socket ${socket.id}`);
     });
 
@@ -42,38 +111,169 @@ function registerSocket(io) {
       }
     });
 
-  // Step 3: Mobile -> Web screenshot data
-  socket.on("screenshotTaken", async (data) => {
-    const imageDetails = data.imageBase64;
-    let obj = new Object();
-    let imgDetArr = [];
-    for (let i = 0; i < imageDetails.length; i++) {
-      obj = new Object();
-      obj.img = imageDetails[i];
-      const imageExtractedText=await processBase64Image(imageDetails[i], {
-        env: { LOG_LEVEL: "DEBUG" },
-        logHeaderId: "12345",
-        patientId: "P001",
-      });
-      obj.extractText = imageExtractedText?.textResp?.responses[0]??"";
-      obj.textresp=imageExtractedText?.textResp;
-      obj.processedImg=imageExtractedText?.processedImg;
+    // Step 3: Mobile -> Web screenshot data
+    socket.on("screenshotTaken", async (data) => {
+      const endStep3 = startTimer();
+      const step3Time = endStep3();
+      // Log Step 3
+      if (logHeaderId) {
+        const step3LogId = await createLogStep(logHeaderId, {
+          orderSequence: "3",
+          stepName:
+            "NodeJS- Screen Shot received for socket(socketId:" +
+            socket.id +
+            ")",
+          startTime: Date.now() - step3Time * 1000,
+          endTime: Date.now(),
+          responseTime: step3Time,
+        });
 
-      imgDetArr.push(obj);
-    }
-    console.log("screenshotTaken function inside");
-    if (global.userSessions[data.userId]) {
-      global.userSessions[data.userId].forEach((sockId) => {
-        if (sockId !== socket.id) {
-          io.to(sockId).emit("screenshotReceived", imgDetArr);
-          console.log(
-            "screenshotTaken function inside web",
-            data.imageBase64
-          );
+        if (step3LogId) {
+          await createLogData(logHeaderId, step3LogId, {
+            inputData: { socketid: socket.id },
+            outputData: {},
+            dataDescription: {
+              desc:
+                "NodeJS- After register to socket(socketId:" + socket.id + ")",
+            },
+          });
         }
-      });
-    }
-  });
+      }
+
+      const endStep4 = startTimer();
+      const imageDetails = data.imageBase64;
+      const step4Time = endStep4();
+
+      if (logHeaderId) {
+        const step4LogId = await createLogStep(logHeaderId, {
+          orderSequence: "4",
+          stepName: "NodeJS- Screenshot taken" + socket.id + ")",
+          startTime: Date.now() - step4Time * 1000,
+          endTime: Date.now(),
+          responseTime: step4Time,
+        });
+
+        if (step4LogId) {
+          await createLogData(logHeaderId, step4LogId, {
+            inputData: { socketid: socket.id, imagedata: data.imageBase64 },
+            outputData: {},
+            dataDescription: {
+              desc:
+                "NodeJS- Screenshot taken request(socketId:" + socket.id + ")",
+            },
+          });
+        }
+      }
+
+      let obj = new Object();
+      let imgDetArr = [];
+      for (let i = 0; i < imageDetails.length; i++) {
+        obj = new Object();
+        obj.img = imageDetails[i];
+
+        const endStep5 = startTimer();
+        const step5Time = endStep5();
+
+        if (logHeaderId) {
+          const step5LogId = await createLogStep(logHeaderId, {
+            orderSequence: "3",
+            stepName:
+              "NodeJS-Before Image OCR Extraction started" + socket.id + ")",
+            startTime: Date.now() - step5Time * 1000,
+            endTime: Date.now(),
+            responseTime: step5Time,
+          });
+
+          if (step5LogId) {
+            await createLogData(logHeaderId, step5LogId, {
+              inputData: { socketid: socket.id },
+              outputData: {},
+              dataDescription: {
+                desc:
+                  "NodeJS-Before Image OCR Extraction started " +
+                  socket.id +
+                  ")",
+              },
+            });
+          }
+        }
+
+        const endStep6 = startTimer();
+        const imageExtractedText = await processBase64Image(imageDetails[i], {
+          env: { LOG_LEVEL: "DEBUG" },
+          logHeaderId: "12345",
+          patientId: "P001",
+        });
+        const step6Time = endStep6();
+        obj.extractText = imageExtractedText?.textResp?.responses[0] ?? "";
+        obj.textresp = imageExtractedText?.textResp;
+        obj.processedImg = imageExtractedText?.processedImg;
+
+        imgDetArr.push(obj);
+
+        if (logHeaderId) {
+          const step6LogId = await createLogStep(logHeaderId, {
+            orderSequence: "6",
+            stepName:
+              "NodeJS-After Image OCR Extraction ended" + socket.id + ")",
+            startTime: Date.now() - step6Time * 1000,
+            endTime: Date.now(),
+            responseTime: step6Time,
+          });
+
+          if (step6LogId) {
+            await createLogData(logHeaderId, step6LogId, {
+              inputData: { socketid: socket.id },
+              outputData: {},
+              dataDescription: {
+                desc:
+                  "NodeJS-After Image OCR Extraction ended " + socket.id + ")",
+              },
+            });
+          }
+        }
+      }
+      console.log("screenshotTaken function inside");
+      if (global.userSessions[data.userId]) {
+        global.userSessions[data.userId].forEach(async (sockId) => {
+          if (sockId !== socket.id) {
+            const endStep7 = startTimer();
+            io.to(sockId).emit("screenshotReceived", imgDetArr);
+            const step7Time = endStep7();
+
+            // Log Step 3
+            if (logHeaderId) {
+              const step7LogId = await createLogStep(logHeaderId, {
+                orderSequence: "7",
+                stepName:
+                  "NodeJS- Emit screenshotReceived(socketId:" + socket.id + ")",
+                startTime: Date.now() - step7Time * 1000,
+                endTime: Date.now(),
+                responseTime: step7Time,
+              });
+
+              if (step7LogId) {
+                await createLogData(logHeaderId, step7LogId, {
+                  inputData: { socketid: socket.id, imgDetArr: imgDetArr },
+                  outputData: {},
+                  dataDescription: {
+                    desc:
+                      "NodeJS- Emit screenshotReceived(socketId:" +
+                      socket.id +
+                      ")",
+                  },
+                });
+              }
+            }
+
+            console.log(
+              "screenshotTaken function inside web",
+              data.imageBase64
+            );
+          }
+        });
+      }
+    });
 
     // Step 4: Cleanup
     socket.on("unregister", (userId) => {
@@ -88,18 +288,6 @@ function registerSocket(io) {
       }
       console.log("Client disconnected:", socket.id);
     });
-
-
-    socket.on("emitmobile", async (data) => {
-    if (global.userSessions[data.userId]) {
-      global.userSessions[data.userId].forEach((sockId) => {
-        if (sockId !== socket.id) {
-          io.to(sockId).emit("emitweb", data);
-        }
-      });
-    }
-  });
-
   });
 }
 
@@ -167,12 +355,11 @@ async function processBase64Image(base64Data, options = {}) {
     const textResp = textRes.data;
     console.log("✅ Extracted text:", textResp);
 
-    return { textResp,processedImg };
+    return { textResp, processedImg };
   } catch (err) {
     console.error("❌ Error in processBase64Image:", err.message);
     throw err;
   }
 }
-
 
 module.exports = registerSocket;
