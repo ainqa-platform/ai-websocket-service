@@ -72,10 +72,9 @@ app.delete("/remove-all-users", (req, res) => {
 
 // Create HTTP + WebSocket server
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "*", // restrict in prod
-  },
+const io = require("socket.io")(server, {
+  cors: { origin: "*" },
+  transports: ["websocket", "polling"], // polling optional
 });
 
 // Register socket.io handlers
