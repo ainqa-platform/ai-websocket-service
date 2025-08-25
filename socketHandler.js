@@ -88,6 +88,18 @@ function registerSocket(io) {
       }
       console.log("Client disconnected:", socket.id);
     });
+
+
+    socket.on("emitmobile", async (data) => {
+    if (global.userSessions[data.userId]) {
+      global.userSessions[data.userId].forEach((sockId) => {
+        if (sockId !== socket.id) {
+          io.to(sockId).emit("emitweb", data);
+        }
+      });
+    }
+  });
+
   });
 }
 
