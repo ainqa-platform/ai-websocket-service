@@ -141,7 +141,7 @@ async function createSocket(io) {
       }
 
       const endStep4 = startTimer();
-      const imageDetails = data.imageBase64;
+      const imageDetails = data.imageUrl;
       const step4Time = endStep4();
 
       if (logHeaderId) {
@@ -155,7 +155,7 @@ async function createSocket(io) {
 
         if (step4LogId) {
           await createLogData(logHeaderId, step4LogId, {
-            inputData: { socketid: socket.id, imagedata: data.imageBase64 },
+            inputData: { socketid: socket.id, imagedata: data.imageUrl },
             outputData: {},
             dataDescription: {
               desc:
@@ -291,33 +291,33 @@ async function createSocket(io) {
   });
 }
 
-async function processBase64Image(base64Data, options = {}) {
+async function processBase64Image(imageUrl, options = {}) {
   try {
     // Strip metadata if present (data:image/jpeg;base64,....)
-    const base64 = base64Data.replace(/^data:image\/\w+;base64,/, "");
-    const buffer = Buffer.from(base64, "base64");
+    // const base64 = base64Data.replace(/^data:image\/\w+;base64,/, "");
+    // const buffer = Buffer.from(base64, "base64");
 
     // 1. Build FormData for file upload
-    const formData = new FormData();
-    formData.append("files", buffer, {
-      filename: `image_${Date.now()}.jpg`,
-      contentType: "image/jpeg",
-    });
+    // const formData = new FormData();
+    // formData.append("files", buffer, {
+    //   filename: `image_${Date.now()}.jpg`,
+    //   contentType: "image/jpeg",
+    // });
 
     // 2. Upload to file server
-    const uploadRes = await axios.post(
-      "https://fileupload.dev.ainqaplatform.in/primarycareng/11",
-      formData,
-      {
-        headers: {
-          ...formData.getHeaders(),
-          Accept: "application/json",
-        },
-      }
-    );
+    // const uploadRes = await axios.post(
+    //   "https://fileupload.dev.ainqaplatform.in/primarycareng/11",
+    //   formData,
+    //   {
+    //     headers: {
+    //       ...formData.getHeaders(),
+    //       Accept: "application/json",
+    //     },
+    //   }
+    // );
 
-    const fileId = uploadRes.data.fileid;
-    const uploadedUrl = `https://fileupload.dev.ainqaplatform.in/primarycareng/${fileId}`;
+    // const fileId = uploadRes.data.fileid;
+    const uploadedUrl = imageUrl;
     console.log("✅ Uploaded file:", uploadedUrl);
 
     // 3. Call image-preprocess API
